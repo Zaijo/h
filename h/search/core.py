@@ -44,6 +44,7 @@ class Search(object):
         self._modifiers = [query.Sorter(),
                            query.Limiter(),
                            query.DeletedFilter(),
+                           query.HiddenFilter(),
                            query.AuthFilter(request),
                            query.UriFilter(request),
                            query.GroupFilter(),

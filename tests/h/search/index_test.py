@@ -10,11 +10,12 @@ import mock
 import pytest
 
 import h.search.index
+from h.services.annotation_moderation import AnnotationModerationService
 
 from tests.common.matchers import Matcher
 
 
-@pytest.mark.usefixtures("annotations")
+@pytest.mark.usefixtures("annotations", "moderation_service")
 class TestIndex(object):
     def test_annotation_ids_are_used_as_elasticsearch_ids(self, es_client,
                                                           factories,
@@ -28,7 +29,7 @@ class TestIndex(object):
                                     id=annotation.id)
         assert result["_id"] == annotation.id
 
-    def test_it_indexes_presented_annotation(self, factories, get_indexed_ann, index,
+    def test_it_indexes_presented_annotation(self, factories, get_indexed_ann, index, pyramid_request,
                                              AnnotationSearchIndexPresenter):
         annotation = factories.Annotation.build()
         presenter = AnnotationSearchIndexPresenter.return_value
@@ -38,7 +39,7 @@ class TestIndex(object):
         index(annotation)
         indexed_ann = get_indexed_ann(annotation.id)
 
-        AnnotationSearchIndexPresenter.assert_called_once_with(annotation)
+        AnnotationSearchIndexPresenter.assert_called_once_with(annotation, pyramid_request)
         assert indexed_ann == presenter.asdict.return_value
 
     def test_it_can_index_an_annotation_with_no_document(self, factories,
@@ -474,3 +475,12 @@ def get_indexed_ann(es_client):
             index=es_client.index, doc_type=es_client.mapping_type,
             id=annotation_id)["_source"]
     return _get
+
+
+@pytest.fixture
+def moderation_service(pyramid_config):
+    svc = mock.create_autospec(AnnotationModerationService, spec_set=True, instance=True)
+    svc.all_hidden.return_value = []
+    svc.hidden.return_value = False
+    pyramid_config.register_service(svc, name='annotation_moderation')
+    return svc

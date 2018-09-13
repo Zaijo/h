@@ -271,6 +271,14 @@ class DeletedFilter(object):
         return search.exclude("exists", field="deleted")
 
 
+class HiddenFilter(object):
+
+    """A filter that only returns documents which are not hidden."""
+
+    def __call__(self, search, _):
+        return search.filter("term", hidden=False)
+
+
 class NipsaFilter(object):
     """Return an Elasticsearch filter for filtering out NIPSA'd annotations."""
 

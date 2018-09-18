@@ -262,11 +262,7 @@ class UriFilter(object):
     def __call__(self, search, params):
         if 'uri' not in params and 'url' not in params:
             return search
-        query_uris = [v for k, v in params.items() if k in ['uri', 'url']]
-        if 'uri' in params:
-            del params['uri']
-        if 'url' in params:
-            del params['url']
+        query_uris = _pop_param_values(params, 'uri') + _pop_param_values(params, 'url')
 
         uris = set()
         for query_uri in query_uris:
@@ -377,8 +373,7 @@ class UserFilter(object):
         if 'user' not in params:
             return search
 
-        users = [v.lower() for k, v in params.items() if k == 'user']
-        del params['user']
+        users = [v.lower() for v in _pop_param_values(params, 'user')]
 
         return search.filter("terms", user=users)
 
@@ -431,8 +426,7 @@ class AnyMatcher(object):
     def __call__(self, search, params):
         if "any" not in params:
             return search
-        qs = ' '.join([v for k, v in params.items() if k == "any"])
-        del params["any"]
+        qs = ' '.join(_pop_param_values(params, "any"))
         return search.query(
             SimpleQueryString(
                 query=qs,
@@ -447,12 +441,7 @@ class TagsMatcher(object):
     """Matches the tags field against 'tag' or 'tags' parameters."""
 
     def __call__(self, search, params):
-        tags = set(v for k, v in params.items() if k in ['tag', 'tags'])
-        try:
-            del params['tag']
-            del params['tags']
-        except KeyError:
-            pass
+        tags = set(_pop_param_values(params, 'tag') + _pop_param_values(params, 'tags'))
         matchers = [Q("match", tags={"query": t, "operator": "and"})
                     for t in tags]
         if matchers:
